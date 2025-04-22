@@ -1,0 +1,83 @@
+---
+title: "Personal Activity Monitoring Report"
+author: "Roos"
+output: html_document
+---
+
+## Loading and Preprocessing the Data
+
+We begin by loading the necessary libraries and the dataset. We then inspect the structure of the data to understand its format.
+
+```{r setup, echo=TRUE}
+# Load necessary libraries
+library(dplyr)
+library(ggplot2)
+
+# Load the dataset
+activity <- read.csv("activity.csv")
+
+# Convert date column to Date type
+activity$date <- as.Date(activity$date)
+
+# View structure of the dataset
+str(activity)
+summary(activity)
+
+# Calculate total steps per day
+total_steps_per_day <- activity %>%
+  group_by(date) %>%
+  summarise(total_steps = sum(steps, na.rm = TRUE))
+
+# Plot histogram
+ggplot(total_steps_per_day, aes(x = total_steps)) +
+  geom_histogram(binwidth = 1000, fill = "skyblue", color = "black") +
+  labs(title = "Total Steps Per Day", x = "Total Steps", y = "Frequency")
+  
+ # Calculate mean and median
+mean_steps <- mean(total_steps_per_day$total_steps)
+median_steps <- median(total_steps_per_day$total_steps)
+
+mean_steps
+median_steps
+
+# Calculate average steps per interval
+avg_steps_interval <- activity %>%
+  group_by(interval) %>%
+  summarise(mean_steps = mean(steps, na.rm = TRUE))
+
+# Time series plot
+plot(avg_steps_interval$interval, avg_steps_interval$mean_steps, 
+     type = "l", 
+     col = "blue",
+     xlab = "5-minute Interval", 
+     ylab = "Average Number of Steps", 
+     main = "Average Daily Activity Pattern")
+     
+     # Find interval with maximum average steps
+max_interval <- avg_steps_interval[which.max(avg_steps_interval$mean_steps), ]
+max_interval
+
+
+# Create a new factor variable for day type
+activity$day_type <- ifelse(weekdays(activity$date) %in% c("Saturday", "Sunday"),
+                            "weekend", "weekday")
+activity$day_type <- factor(activity$day_type, levels = c("weekday", "weekend"))
+
+# Quick check of the new factor
+table(activity$day_type)
+
+
+# Average steps by interval and day_type
+avg_steps_daytype <- activity %>%
+  group_by(interval, day_type) %>%
+  summarise(mean_steps = mean(steps, na.rm = TRUE), .groups = 'drop')
+
+# Panel plot using ggplot2
+ggplot(avg_steps_daytype, aes(x = interval, y = mean_steps)) +
+  geom_line(color = "darkgreen") +
+  facet_wrap(~ day_type, ncol = 1) +
+  labs(title = "Average Daily Activity Patterns: Weekday vs Weekend",
+       x = "5-minute Interval", y = "Average Number of Steps") +
+  theme_minimal()
+
+
